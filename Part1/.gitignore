@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# generated output
+*.png
+hist_out/
+plots/
+
+# large audio test files (if you don't want to version them)
+*.wav
+!samples/keep_this_one.wav   # exception, if needed
+
+# OS/editor junk
+.DS_Store
+.vscode/
