@@ -14,6 +14,8 @@ import sys
 import wave
 
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")  # no GUI backend, just save to files
 import matplotlib.pyplot as plt
 
 
