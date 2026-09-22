@@ -11,6 +11,9 @@ plots/
 *.wav
 !samples/keep_this_one.wav   # exception, if needed
 
+# pdfs po claude rafa
+*.pdf
+
 # OS/editor junk
 .DS_Store
 .vscode/
