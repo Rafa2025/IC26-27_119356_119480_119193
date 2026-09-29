@@ -5,7 +5,8 @@ scalar quantization, mid-tread, shift-truncate). Output stays in the
 same WAV container width as the input; only the value resolution drops.
 
 Usage:
-    python3 wav_quant.py input.wav output.wav --bits 8
+    python3 wav_quant.py in.wav out.wav --bits 8
+    python3 wav_quant.py in.wav out.wav --levels 1000
 """
 
 import argparse
@@ -45,9 +46,11 @@ def read_samples(path):
     return samples, params, bits, unsigned_in_file
 
 
-def quantize(samples, bits, target_bits):
+def quantize_by_bits(samples, bits, target_bits):
     """
     Mid-tread uniform scalar quantization via shift-truncate.
+    Only valid when the level count is a power of two (2^target_bits),
+    since bit-shifting IS division by a power of two.
     shift = bits - target_bits
     y = (x >> shift) << shift
     Truncates toward -inf (Python's >> on negative ints does this
@@ -58,6 +61,30 @@ def quantize(samples, bits, target_bits):
         sys.exit(f"--bits must be between 1 and {bits - 1} for this file")
     shift = bits - target_bits
     return array.array(samples.typecode, [(x >> shift) << shift for x in samples])
+
+
+def quantize_by_levels(samples, bits, levels):
+    """
+    Mid-tread uniform scalar quantization for an ARBITRARY level count
+    (not restricted to powers of two). Step size derived directly from
+    the requested number of levels, so no bit-shift trick applies here.
+
+    delta = full_range / levels
+    y = (x // delta) * delta
+
+    0 // delta == 0 always, so zero maps to zero (mid-tread), and floor
+    division toward -inf can't push y outside the original signed range
+    -- no clipping needed, same guarantee as the bits-based path.
+    """
+    if levels <= 1:
+        sys.exit("--levels must be >= 2")
+    full_range = 2 ** bits  # e.g. 65536 for 16-bit
+    if levels >= full_range:
+        sys.exit(f"--levels must be less than {full_range} for this file")
+    delta = full_range // levels
+    if delta < 1:
+        delta = 1
+    return array.array(samples.typecode, [(x // delta) * delta for x in samples])
 
 
 def write_samples(path, samples, params, unsigned_in_file):
@@ -77,15 +104,27 @@ def main():
     ap = argparse.ArgumentParser(description="Uniform scalar quantizer for WAV files")
     ap.add_argument("input", help="input .wav file")
     ap.add_argument("output", help="output .wav file (quantized)")
-    ap.add_argument("--bits", type=int, required=True,
-                     help="target effective bits per sample (e.g. 8 for 256 levels)")
+    group = ap.add_mutually_exclusive_group(required=True)
+    group.add_argument("--bits", type=int,
+                        help="target effective bits per sample -> 2^bits levels "
+                             "(power-of-two shortcut, e.g. 8 for 256 levels)")
+    group.add_argument("--levels", type=int,
+                        help="target number of quantization levels, any integer "
+                             "(not restricted to a power of two)")
     args = ap.parse_args()
 
     samples, params, bits, unsigned_in_file = read_samples(args.input)
-    print(f"{args.input}: {bits}-bit container, {params.nchannels} channel(s), "
-          f"quantizing to {args.bits} effective bits")
 
-    quantized = quantize(samples, bits, args.bits)
+    if args.bits is not None:
+        print(f"{args.input}: {bits}-bit container, {params.nchannels} channel(s), "
+              f"quantizing to {args.bits} effective bits (2**{args.bits}="
+              f"{2**args.bits} levels)")
+        quantized = quantize_by_bits(samples, bits, args.bits)
+    else:
+        print(f"{args.input}: {bits}-bit container, {params.nchannels} channel(s), "
+              f"quantizing to {args.levels} levels")
+        quantized = quantize_by_levels(samples, bits, args.levels)
+
     write_samples(args.output, quantized, params, unsigned_in_file)
     print(f"wrote {args.output}")
 
