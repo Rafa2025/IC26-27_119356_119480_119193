@@ -292,6 +292,16 @@ All C tests also run with the sanitizer build.
 4. For every run it records size, bitrate (kbps), SNR, compression time, decompression time and peak memory (GNU time, as in `bench.sh`).
 5. Output is a CSV that gives one rate-distortion curve per codec: SNR on one axis, kbps on the other.
 
+`./bench_lossy.sh [-o DIR] [-t targets] [-r bitrates] [-j jobs] MODE files|dir` runs
+one mode: `compare` (the steps above), `exp1` .. `exp7` or `all` (see Experiments).
+`make bench` and `make experiments` run it on the course samples. Every mode writes
+`MODE.csv` (one row per run: `file,codec,config,param,bytes,kbps,snr_db,lag,enc_s,enc_kb,dec_s,dec_kb`),
+`MODE.md` (kbps at equal SNR and SNR at equal kbps, averaged over the files,
+from `snr_tool.py table`) and `MODE.svg` (average curves, from `snr_tool.py plot`).
+ffmpeg runs with one thread, like our codec. With `-j` above 1 the files run in
+parallel: rates and SNRs are unchanged, but times and memory are then not
+representative, so `compare` runs with `-j 1`.
+
 The fair comparison is at equal SNR (or equal kbps), read off the curves.
 MP3/AAC are built for perceptual quality, not for SNR, so a lower SNR at the
 same bitrate is expected from them.

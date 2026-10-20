@@ -6,3 +6,5 @@ test_rangecoder
 test_transform
 test_coefcoder
 build/
+*.log
+listen/

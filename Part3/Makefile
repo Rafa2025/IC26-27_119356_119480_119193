@@ -6,6 +6,9 @@
 #                  sanitizers; runs the C tests and the end-to-end tests with them
 #   make speed     time FFT-based vs direct transforms (experiment 7)
 #   make variants  one encoder/decoder pair per CTX_MODE x PROB_SHIFT in build/ctx<M>_shift<S>/
+#   make bench     compare with MP3 and AAC (needs ffmpeg); WAVS=dir or files
+#   make experiments  experiments 1-7 for the report; WAVS=dir or files
+#                  (both write CSV, Markdown and SVG to bench_out/; see bench_lossy.sh)
 #   make clean
 #
 # wavfile.c is shared with Part 2 and compiled from there.
@@ -20,6 +23,7 @@ SRC  = codec_lossy.c transform.c quant.c ratectl.c coefcoder.c rangecoder.c $(WA
 HDR  = codec_lossy.h transform.h quant.h ratectl.h coefcoder.h rangecoder.h ../Part2/wavfile.h
 
 TESTS = test_rangecoder test_transform test_coefcoder
+WAVS ?= "../Audio files (WAV format)-20261020"
 
 all: wav_lossy_enc wav_lossy_dec
 
@@ -60,6 +64,12 @@ asan: enc_main.c dec_main.c test_rangecoder.c test_transform.c test_coefcoder.c 
 	./test_coefcoder_asan
 	python3 test_lossy.py --enc ./wav_lossy_enc_asan --dec ./wav_lossy_dec_asan --quick
 
+bench: all
+	./bench_lossy.sh -o bench_out compare $(WAVS)
+
+experiments: all variants
+	./bench_lossy.sh -o bench_out -j 8 all $(WAVS)
+
 # Compile-time variants for experiments 4 and 5 (see "Build variants" in CODEC_LOSSY.md).
 CTX_MODES   = 0 1 2 3
 PROB_SHIFTS = 4 5 6
@@ -77,4 +87,4 @@ clean:
 	rm -f $(TESTS) $(addsuffix _asan,$(TESTS))
 	rm -rf build
 
-.PHONY: all test speed asan variants clean
+.PHONY: all test speed asan variants bench experiments clean
