@@ -59,4 +59,15 @@ int wav_rebuild(FILE *out,
                 int32_t *const *chan, int channels, int bits, uint64_t nframes,
                 const uint8_t *suffix, uint64_t suffix_len);
 
+/*
+ * Fill hdr with a plain 44-byte PCM WAV header (RIFF, "fmt ", "data") for
+ * nframes frames. Used by the lossy decoder (Part 3), which does not keep the
+ * original header: it passes hdr as the prefix of wav_rebuild, or writes it
+ * itself and then calls wav_rebuild once per block with no prefix/suffix.
+ * The caller makes sure the data size fits in 32 bits.
+ */
+#define WAV_HEADER_SIZE 44
+void wav_make_header(uint8_t hdr[WAV_HEADER_SIZE], int channels, int bits,
+                     uint32_t rate, uint64_t nframes);
+
 #endif /* WAVFILE_H */

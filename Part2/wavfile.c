@@ -142,3 +142,32 @@ int wav_rebuild(FILE *out,
     if (suffix_len && fwrite(suffix, 1, suffix_len, out) != suffix_len) return 1;
     return 0;
 }
+
+/* ------------------------------------------------------------------ */
+/* wav_make_header: a minimal 44-byte header                           */
+/* ------------------------------------------------------------------ */
+static void wr16(uint8_t *p, uint32_t v) { p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8); }
+static void wr32(uint8_t *p, uint32_t v) { wr16(p, v); wr16(p + 2, v >> 16); }
+
+void wav_make_header(uint8_t hdr[WAV_HEADER_SIZE], int channels, int bits,
+                     uint32_t rate, uint64_t nframes)
+{
+    uint32_t align = (uint32_t)(channels * bits / 8);        /* bytes per frame */
+    uint32_t data  = (uint32_t)(nframes * align);
+
+    memcpy(hdr, "RIFF", 4);
+    wr32(hdr + 4, 36 + data);                  /* everything after this field */
+    memcpy(hdr + 8, "WAVE", 4);
+
+    memcpy(hdr + 12, "fmt ", 4);
+    wr32(hdr + 16, 16);                        /* fmt body size */
+    wr16(hdr + 20, 1);                         /* PCM */
+    wr16(hdr + 22, (uint32_t)channels);
+    wr32(hdr + 24, rate);
+    wr32(hdr + 28, rate * align);              /* bytes per second */
+    wr16(hdr + 32, align);
+    wr16(hdr + 34, (uint32_t)bits);
+
+    memcpy(hdr + 36, "data", 4);
+    wr32(hdr + 40, data);
+}

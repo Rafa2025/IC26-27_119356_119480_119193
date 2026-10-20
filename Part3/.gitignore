@@ -1,0 +1,8 @@
+# build outputs (make clean removes them)
+wav_lossy_enc
+wav_lossy_dec
+*_asan
+test_rangecoder
+test_transform
+test_coefcoder
+build/
