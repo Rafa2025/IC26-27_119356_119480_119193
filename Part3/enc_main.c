@@ -11,7 +11,7 @@
  *   -v                   print step, SNR, bits per sample, kbps
  *
  * Not in the help text (experiments only):
- *   --round R            quantizer rounding offset, 0.3..0.5 (default 0.5)
+ *   --round R            quantizer rounding offset, 0.3..0.5 (default 0.4)
  */
 #include <math.h>
 #include <stdio.h>

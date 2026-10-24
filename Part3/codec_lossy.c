@@ -359,7 +359,7 @@ int lossy_encode(const char *in_path, const char *out_path, const LossyParams *p
     layout_finish(&L);
 
     const double min_step = fmax(0.01, quant_min_step(L.bits, L.n));
-    const double max_step = ldexp(1.0, L.bits);
+    const double max_step = quant_max_step(L.bits, L.n);
     const uint64_t nsamples = L.frames * (uint64_t)L.channels;
 
     cc  = calloc(1, sizeof *cc);

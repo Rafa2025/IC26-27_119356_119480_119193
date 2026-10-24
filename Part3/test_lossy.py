@@ -222,6 +222,26 @@ def test_targets(tmp, quick):
         prev_size = size or prev_size
     # A target that integer rounding cannot reach: warning, still decodes.
     roundtrip(tmp, "target_unreachable", make_signal("sine", 3000, 1, 8), 8, ["--snr", "200"])
+    # Loud tonal input, low target: the step limit must not stop the encoder
+    # from going down to the target (it used to stop around 20 dB).
+    loud = make_signal("sine", 20000, 2, 16, seed=5)
+    for target in (5, 10):
+        s, _ = roundtrip(tmp, "loud_low_%d" % target, loud, 16, ["--snr", str(target)], target)
+        if s is not None and s > target + 1.5:
+            fail("loud tonal input, target %d dB: got %.2f dB (step limited)" % (target, s))
+    # High targets on quiet input, close to the 16-bit limit, must be met
+    # without a warning (the output rounding is part of the estimate).
+    # It must not overshoot by much either (that would waste bits).
+    quiet = [[v // 30 for v in ch] for ch in sig]
+    for target in (60, 66):
+        src = os.path.join(tmp, "high.wav")
+        write_wav(src, quiet, 16)
+        rc, err = run([ENC, "--snr", str(target), src, os.path.join(tmp, "high.icd")])
+        if rc != 0 or "warning" in err:
+            fail("target %d dB: %s" % (target, err.strip() or "encoder failed"))
+        s, _ = roundtrip(tmp, "high_%d" % target, quiet, 16, ["--snr", str(target)], target)
+        if s is not None and s > target + 0.25:
+            fail("quiet input, target %d dB: got %.2f dB (overshoot)" % (target, s))
     # Fixed step: bigger step, lower SNR.
     s1, _ = roundtrip(tmp, "step_small", sig, 16, ["--step", "4"])
     s2, _ = roundtrip(tmp, "step_large", sig, 16, ["--step", "400"])

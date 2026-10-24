@@ -7,9 +7,11 @@ benchmark. Standard library only.
       Prints "<snr_db> <lag>". SNR = 10 log10(sum x^2 / sum (x - y)^2) over
       all channels and samples, as integers (8-bit centred on 0).
       MP3 and AAC decoders can add a delay at the start: with --max-lag N
-      (default 0) the delay 0..N frames that maximizes the correlation is
-      found first (FFT cross-correlation), and that many frames are dropped
-      from the start of the decoded file. Missing frames at the end count as
+      (default 0) the delay 0..N frames is found first, and that many frames
+      are dropped from the start of the decoded file. The candidates are
+      lag 0 and the 5 highest peaks of the cross-correlation (FFT); the one
+      with the best SNR wins. Checking the SNR matters for periodic signals,
+      whose correlation also peaks at multiples of the period. Missing frames at the end count as
       zeros, extra frames are ignored.
 
   snr_tool.py diff ORIGINAL.wav DECODED.wav OUT.wav [--gain DB] [--max-lag N]
@@ -23,17 +25,24 @@ benchmark. Standard library only.
   snr_tool.py table RESULTS.csv [--at-snr 20,30,40] [--at-kbps 96,128,192]
       For every curve (codec + config in the CSV), interpolates the bitrate
       at each SNR (and the SNR at each bitrate) on every file, then averages
-      over the files. Prints a Markdown table. Interpolation is linear in
+      over the files that cover that point (their count is shown when it is
+      not all of them). With a "ratio" column in the CSV, the compression
+      ratio at each SNR is printed too: total original size / total
+      compressed size (a plain mean of ratios would be dominated by
+      near-silent files).
+      Prints a Markdown table. Interpolation is linear in
       SNR vs log(kbps). Up to 0.5 dB (or 3% in kbps) outside a file's
       measured range the end segment is extended (our encoder lands just
-      above each target, e.g. 20.02 dB for 20); further out the value is "-".
+      above each target, e.g. 20.02 dB for 20); further out the file does
+      not count for that point.
 
   snr_tool.py plot RESULTS.csv OUT.svg [--title T]
-      SVG plot of the average rate-distortion curve of every config:
-      kbps on the x axis, SNR on the y axis.
+      SVG plot of the rate-distortion curve of every config: one point per
+      encoder setting (SNR target for ours, bitrate for MP3/AAC) at the mean
+      kbps and mean SNR over the files; kbps on the x axis, SNR on the y axis.
 
 CSV columns (written by bench_lossy.sh):
-  file,codec,config,param,bytes,kbps,snr_db,lag,enc_s,enc_kb,dec_s,dec_kb
+  file,codec,config,param,bytes,ratio,kbps,snr_db,lag,enc_s,enc_kb,dec_s,dec_kb
 """
 import argparse
 import array
@@ -129,11 +138,12 @@ def fft(a, invert=False):
     return a
 
 
-def find_lag(x, y, nc, max_lag):
-    """Delay (in frames, 0..max_lag) of y relative to x, by cross-correlation
-    of the channel sums over a 32768-frame window from the louder middle."""
+def lag_candidates(x, y, nc, max_lag, count=5):
+    """Delays (in frames, 0..max_lag) of y relative to x worth checking:
+    0 and the `count` best peaks of the cross-correlation of the channel sums
+    over a 32768-frame window from the middle of the file."""
     if max_lag <= 0:
-        return 0
+        return [0]
     win = 32768
     fx, fy = len(x) // nc, len(y) // nc
     if fx < 2 * max_lag + 16 or fy < 2 * max_lag + 16:
@@ -149,8 +159,14 @@ def find_lag(x, y, nc, max_lag):
     Y = fft(mono_y + [0] * (n - len(mono_y)))
     corr = fft([b * a.conjugate() for a, b in zip(X, Y)], invert=True)
     # corr[lag] = sum_i x[i] y[i + lag]
-    best = max(range(min(max_lag, len(mono_y) - 1) + 1), key=lambda l: corr[l].real)
-    return best
+    lags = range(min(max_lag, len(mono_y) - 1) + 1)
+    peaks = sorted(lags, key=lambda l: corr[l].real, reverse=True)[:count]
+    return sorted(set([0] + peaks))
+
+
+def best_lag(x, y, nc, max_lag):
+    """(snr, lag) for the candidate lag with the best SNR."""
+    return max((snr_db(x, y, nc, lag), lag) for lag in lag_candidates(x, y, nc, max_lag))
 
 
 # ---------------------------------------------------------------- SNR
@@ -206,7 +222,7 @@ def cmd_diff(a):
     nc2, bits2, rate2, y = read_wav(a.decoded)
     if (nc, bits, rate) != (nc2, bits2, rate2):
         sys.exit("format mismatch: %s vs %s" % ((nc, bits, rate), (nc2, bits2, rate2)))
-    lag = find_lag(x, y, nc, a.max_lag)
+    _, lag = best_lag(x, y, nc, a.max_lag)
     y = y[lag * nc:lag * nc + len(x)]
     if len(y) < len(x):
         y = y + array.array(y.typecode, bytes(y.itemsize * (len(x) - len(y))))
@@ -230,14 +246,16 @@ def cmd_snr(a):
     if bits != bits2:            # compare at the original's scale
         shift = bits - bits2
         y = array.array("q", (v << shift if shift > 0 else v >> -shift for v in y))
-    lag = find_lag(x, y, nc, a.max_lag)
-    print("%.4f %d" % (snr_db(x, y, nc, lag), lag))
+    s, lag = best_lag(x, y, nc, a.max_lag)
+    print("%.4f %d" % (s, lag))
 
 
 # ---------------------------------------------------------------- tables
 
-def load_curves(path):
-    """{(codec, config): {file: [(snr, kbps), ...] sorted by snr}}"""
+def load_curves(path, ratio_k=None):
+    """{(codec, config): {file: [(snr, kbps), ...] sorted by snr}}
+    If ratio_k is a dict, it gets {file: ratio * kbps} (a constant per file:
+    both are proportional to the compressed size), for CSVs with a ratio."""
     curves = defaultdict(lambda: defaultdict(list))
     with open(path, newline="") as f:
         for r in csv.DictReader(f):
@@ -247,6 +265,8 @@ def load_curves(path):
                 continue
             if math.isfinite(s) and k > 0:
                 curves[(r["codec"], r["config"])][r["file"]].append((s, k))
+                if ratio_k is not None and r.get("ratio"):
+                    ratio_k[r["file"]] = float(r["ratio"]) * k
     for c in curves.values():
         for pts in c.values():
             pts.sort()
@@ -282,31 +302,56 @@ def interp(pts, x, xi, yi, logx=False, logy=False):
     return None
 
 
-def average_at(files, x, xi, yi, logx, logy):
+def partial_average_at(files, x, xi, yi, logx, logy):
+    """(mean over the files whose curve covers x, how many files that is)."""
     vals = [interp(pts, x, xi, yi, logx, logy) for pts in files.values()]
-    if not vals or any(v is None for v in vals):
-        return None
-    return sum(vals) / len(vals)
+    vals = [v for v in vals if v is not None]
+    return (sum(vals) / len(vals) if vals else None), len(vals)
+
+
+def ratio_at(files, snr, ratio_k):
+    """Overall compression ratio at an SNR: total original size / total
+    compressed size over the files that cover it (the harmonic mean of the
+    per-file ratios). A plain mean would be dominated by near-silent files."""
+    inv = []
+    for f, pts in files.items():
+        k = interp(pts, snr, 0, 1, False, True)
+        if k is not None and f in ratio_k:
+            inv.append(k / ratio_k[f])
+    return (len(inv) / sum(inv) if inv else None), len(inv)
+
+
+def cell(v, n, total, fmt):
+    if v is None:
+        return "-"
+    return fmt % v + ("" if n == total else " (%d)" % n)
 
 
 def cmd_table(a):
-    curves = load_curves(a.csv)
+    ratio_k = {}
+    curves = load_curves(a.csv, ratio_k)
     at_snr = [float(v) for v in a.at_snr.split(",") if v]
     at_kbps = [float(v) for v in a.at_kbps.split(",") if v]
+    at_ratio = at_snr if ratio_k else []
     head = ["codec", "config", "files"]
-    head += ["kbps @ %g dB" % s for s in at_snr] + ["dB @ %g kbps" % k for k in at_kbps]
+    head += ["kbps @ %g dB" % s for s in at_snr] + ["ratio @ %g dB" % s for s in at_ratio]
+    head += ["dB @ %g kbps" % k for k in at_kbps]
     print("| " + " | ".join(head) + " |")
     print("|" + "---|" * len(head))
     for (codec, config), files in sorted(curves.items()):
-        row = [codec, config, str(len(files))]
+        total = len(files)
+        row = [codec, config, str(total)]
         for s in at_snr:
-            v = average_at(files, s, 0, 1, False, True)
-            row.append("-" if v is None else "%.1f" % v)
+            row.append(cell(*partial_average_at(files, s, 0, 1, False, True), total, "%.1f"))
+        for s in at_ratio:
+            row.append(cell(*ratio_at(files, s, ratio_k), total, "%.1f"))
         for k in at_kbps:
-            v = average_at(files, k, 1, 0, True, False)
-            row.append("-" if v is None else "%.2f" % v)
+            row.append(cell(*partial_average_at(files, k, 1, 0, True, False), total, "%.2f"))
         print("| " + " | ".join(row) + " |")
-    print("\nAverages over all files; '-' = outside the measured range of at least one file.")
+    print("\nAverages over the files; \"(n)\" = only n files cover that point, the others are "
+          "outside their measured range; '-' = none does.")
+    if at_ratio:
+        print("ratio = total original WAV size / total compressed size over those files.")
 
 
 # ---------------------------------------------------------------- plot
@@ -315,21 +360,32 @@ COLORS = ["#2a6fdb", "#d1495b", "#2e933c", "#edae49", "#7b4fb3", "#00798c",
           "#8c564b", "#e377c2", "#555555", "#bcbd22", "#17becf", "#ff7f0e"]
 
 
+def setting_points(path):
+    """{(codec, config): [(mean kbps, mean snr), ...]}: one point per encoder
+    setting (SNR target for ours, bitrate for MP3/AAC), averaged over the
+    files, using only settings that every file of that curve has."""
+    acc = defaultdict(lambda: defaultdict(list))
+    files = defaultdict(set)
+    with open(path, newline="") as f:
+        for r in csv.DictReader(f):
+            try:
+                s, k = float(r["snr_db"]), float(r["kbps"])
+            except (ValueError, KeyError):
+                continue
+            if math.isfinite(s) and k > 0:
+                acc[(r["codec"], r["config"])][r["param"]].append((k, s))
+                files[(r["codec"], r["config"])].add(r["file"])
+    out = {}
+    for key, params in acc.items():
+        pts = [(sum(p[0] for p in v) / len(v), sum(p[1] for p in v) / len(v))
+               for v in params.values() if len(v) == len(files[key])]
+        out[key] = sorted(pts)
+    return out
+
+
 def cmd_plot(a):
-    curves = load_curves(a.csv)
-    series = []
-    for (codec, config), files in sorted(curves.items()):
-        lo = max(min(p[0] for p in pts) for pts in files.values())
-        hi = min(max(p[0] for p in pts) for pts in files.values())
-        pts = []
-        s = math.ceil(lo * 2) / 2
-        while s <= hi:
-            k = average_at(files, s, 0, 1, False, True)
-            if k:
-                pts.append((k, s))
-            s += 0.5
-        if len(pts) >= 2:
-            series.append(("%s %s" % (codec, config), pts))
+    series = [("%s %s" % key, pts) for key, pts in sorted(setting_points(a.csv).items())
+              if len(pts) >= 2]
     if not series:
         sys.exit("nothing to plot")
 

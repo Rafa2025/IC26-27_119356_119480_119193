@@ -21,7 +21,10 @@
  *          0, 1, 2, 3-4, 5-6, 7-9, 10-14, 15+
  *
  * Compile-time variant CTX_MODE (see "Build variants" in CODEC_LOSSY.md):
- *   0 no contexts, 1 band only, 2 neighbours only, 3 both (default).
+ *   0 no contexts, 1 band only, 2 neighbours only (default), 3 both.
+ * Experiment 4 showed that the band adds nothing once the neighbours are
+ * known (busy regions are the low frequencies anyway), so the default
+ * uses the neighbours only: fewer models, each one learns faster.
  *
  * Each channel has its own models and its own previous block.
  */
@@ -32,7 +35,7 @@
 #include "rangecoder.h"
 
 #ifndef CTX_MODE
-#define CTX_MODE 3
+#define CTX_MODE 2
 #endif
 
 #define CC_NBANDS   12

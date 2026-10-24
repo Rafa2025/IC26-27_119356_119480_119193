@@ -7,9 +7,13 @@
  *  3. bisect on log(step), 24 rounds; the SNR of each candidate is
  *     estimated from the stored coefficients (Parseval), no inverse transform:
  *         En = weight * sum (c - q*step)^2
+ *     corrected for the decoder's rounding of its output to integers
+ *     (see rounded_var in ratectl.c)
  *  4. round the step to float32 (what the file stores) and verify it with a
  *     real decode supplied by the caller; while the target is missed, reduce
- *     the step by 0.5%, at most 20 times.
+ *     the step by 0.5%, at most 20 times. If instead it overshoots by more
+ *     than 0.1 dB (only near the 16-bit limit, where the estimate is
+ *     pessimistic), raise the step with up to 6 more real decodes.
  *
  * The real decode is a callback so that it runs exactly the decoder's code
  * (inverse transform, overlap-add, stereo, rounding, clipping), which lives

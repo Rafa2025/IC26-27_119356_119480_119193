@@ -17,3 +17,6 @@ plots/
 # OS/editor junk
 .DS_Store
 .vscode/
+
+# course datasets (downloaded from eLearning, not ours to publish)
+Audio_Datasets/

@@ -29,10 +29,20 @@ double quant_sq_error(const float *c, size_t n, double step, double r)
  * <= 1, so |c| <= 2 sqrt(2N) A. Dividing by QUANT_MAX gives a step for which
  * |q| <= QUANT_MAX always holds.
  */
+static double max_coef(int bits, int n)
+{
+    return 2.0 * sqrt(2.0 * n) * ldexp(1.0, bits - 1);
+}
+
 double quant_min_step(int bits, int n)
 {
-    double a = ldexp(1.0, bits - 1);
-    return 2.0 * sqrt(2.0 * n) * a / QUANT_MAX;
+    return max_coef(bits, n) / QUANT_MAX;
+}
+
+/* With step >= 2 max|c|, |c| / step + R < 1 for any R <= 0.5, so q = 0. */
+double quant_max_step(int bits, int n)
+{
+    return 2.0 * max_coef(bits, n);
 }
 
 double snr_db(double signal, double noise)

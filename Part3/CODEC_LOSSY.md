@@ -30,7 +30,7 @@ not use any psychoacoustic model.
 `--step` and `--snr` exclude each other. With neither, `--snr 30` is used.
 
 There is one more option, left out of `--help`: `--round R` (0.3 to 0.5, default
-0.5), the rounding offset of the quantizer. It is used only by the encoder and is
+0.4), the rounding offset of the quantizer. It is used only by the encoder and is
 not stored, so the decoder does not need it (see Experiments).
 
 ## Encoder flow
@@ -125,7 +125,7 @@ this weight when it computes the error from coefficients.
 
 ## Quantization
 
-`q = sign(c) * floor(|c| / step + R)` with `R = 0.5` by default (plain rounding,
+`q = sign(c) * floor(|c| / step + R)` with `R = 0.4` by default (a small dead zone; `R = 0.5` is plain rounding,
 no dead zone) and `c' = q * step`. `R` is the hidden `--round` option; the
 decoder only multiplies by the step, so it does not depend on `R`. One step for all coefficients, both channels and all blocks.
 The step is stored as a 32-bit float; the encoder rounds it to that float
@@ -138,17 +138,20 @@ flowchart TD
     A["--snr DB"] --> B["Signal energy Es = sum of x^2<br/>over the original integer samples"]
     B --> C["First guess<br/>s0 = sqrt(12 * Es / (samples * 10^(DB/10)))"]
     C --> D["Bracket: lo = s0/8, hi = s0*8<br/>widen until SNR(lo) >= DB > SNR(hi)"]
-    D --> E["Bisect on log(step), 24 rounds<br/>SNR from the coefficients:<br/>En = weight * sum (c - q*step)^2"]
+    D --> E["Bisect on log(step), 24 rounds<br/>SNR from the coefficients:<br/>En = weight * sum (c - q*step)^2<br/>+ output rounding (see below)"]
     E --> F["Largest step with SNR >= DB"]
     F --> G["Verify with a real decode:<br/>inverse transform, round, clip,<br/>SNR on integer samples"]
     G -->|"SNR >= DB"| H[use this step]
     G -->|"SNR < DB"| I["step = step * 0.995"]
+    G -->|"SNR > DB + 0.1"| K2["raise the step:<br/>up to 6 real decodes"]
+    K2 --> H
     I --> G
 ```
 
 - **Why search on coefficients:** no inverse transform is needed inside the loop, each round is one pass of quantize and sum. The estimate is valid because of Parseval.
 - **Why verify afterwards:** the final output is rounded to integers and clipped, which the coefficient domain does not see. The padded zeros are also counted as signal positions in the coefficient domain. The verification measures the real SNR on the real output, and the step is reduced slightly until the target is met (at most 20 times).
-- **Limits:** the step is limited to `[max(0.01, 2*sqrt(2N)*2^(bits-1) / 2^30), 2^bits]`. The second lower bound guarantees `|q| <= 2^30` for any input, so every value fits the coefficient coder; it only matters for 24-bit input (step >= 1 at N = 2048). A `--step` below it is raised to it, with a warning. If even the smallest step cannot reach the target (for example, a target above what integer rounding allows), the encoder uses the smallest step and prints a warning with the SNR it got.
+- **Output rounding in the estimate:** the decoder rounds its output to integers. If the error before rounding has variance `s2` per sample, the error after it is `round(e)` with `e ~ N(0, s2)`: about `s2 + 1/12` for large errors, and close to 0 when `s2 << 1` (rounding snaps back to the original integer). The estimate uses `E[round(e)^2]` with `s2 = En / samples`. Without it, targets above about 60 dB were missed (by up to 0.33 dB on the training set) after 20 slow verification decodes. With it, the model is slightly pessimistic near the 16-bit limit, so when the real SNR overshoots the target by more than 0.1 dB, the step is raised again with up to 6 real decodes. Normal targets land within a few hundredths of a dB and never need either loop.
+- **Limits:** the step is limited to `[max(0.01, C / 2^30), 2C]`, where `C = 2*sqrt(2N)*2^(bits-1)` bounds every coefficient. Above `2C` every coefficient quantizes to 0, so a larger step is never useful (a fixed upper limit of `2^bits` used to stop loud tonal files at about 20 dB when a lower target was asked). The second lower bound guarantees `|q| <= 2^30` for any input, so every value fits the coefficient coder; it only matters for 24-bit input (step >= 1 at N = 2048). A `--step` below it is raised to it, with a warning. If even the smallest step cannot reach the target (for example, a target above what integer rounding allows), the encoder uses the smallest step and prints a warning with the SNR it got.
 - **Silent input:** if `Es = 0`, SNR is undefined and the step is set to 1.
 - **SNR definition:** `10*log10(sum x^2 / sum (x - y)^2)` over all channels and samples of the original `x` and decoded `y`, as integers (8-bit samples centered on 0).
 
@@ -172,14 +175,14 @@ flowchart LR
 
 | Step | Bins | Model |
 |---|---|---|
-| 1 | `q == 0 ?` | `Z[channel][band][nctx]` |
+| 1 | `q == 0 ?` | `Z[channel][nctx]` (`Z[channel][band][nctx]` with `CTX_MODE 3`) |
 | 2 | sign (only if nonzero) | no model, fixed probability 1/2 |
 | 3 | `|q| > 1 ?`, `|q| > 2 ?`, ... up to `|q| > 14` (unary) | `U[channel][nctx][i]` |
 | 4 | if `|q| >= 15`: `|q| - 15` as Exp-Golomb, order 0 | prefix bits: adaptive, one model per position `EG[channel][i]`; suffix bits: fixed 1/2 |
 
 ### Contexts
 
-- `band = min(floor(log2(k + 1)), 11)`: 12 frequency classes, narrow at low frequencies where the statistics change fastest.
+- `band = min(floor(log2(k + 1)), 11)`: 12 frequency classes, narrow at low frequencies. Only used with `CTX_MODE` 1 or 3: Experiment 4 showed it adds nothing once the neighbours are known (busy regions are the low frequencies anyway), so the default (`CTX_MODE 2`) uses the neighbours only.
 - `nctx`: from the magnitudes already known, with `p` the previous block of the same channel (zeros for the first block):
   `m = 2|q[k-1]| + |q[k-2]| + |p[k-1]| + 2|p[k]| + |p[k+1]|`.
   Neighbours outside the block count as 0.
@@ -288,16 +291,16 @@ All C tests also run with the sanitizer build.
 
 1. For each WAV file, run our encoder for several targets (for example 20, 30, 40, 50 dB) with both transforms, and with `lr` and `ms`.
 2. Run `ffmpeg` (libmp3lame and the native AAC encoder) at several bitrates (64 to 320 kbps), then decode back to WAV.
-3. `snr_tool.py` computes the SNR of every result against the original. MP3 and AAC add a delay at the start, so it first finds the lag between 0 and 4096 samples that maximizes the correlation, trims it, and only then computes the SNR.
+3. `snr_tool.py` computes the SNR of every result against the original. MP3 and AAC add a delay at the start, so it first finds the lag between 0 and 4096 frames, trims it, and only then computes the SNR. The candidates are lag 0 and the 5 highest peaks of the cross-correlation; the one with the best SNR wins (periodic signals, like some SQAM tracks, have correlation peaks at multiples of their period, and the highest peak alone picked a wrong lag on one of them).
 4. For every run it records size, bitrate (kbps), SNR, compression time, decompression time and peak memory (GNU time, as in `bench.sh`).
 5. Output is a CSV that gives one rate-distortion curve per codec: SNR on one axis, kbps on the other.
 
 `./bench_lossy.sh [-o DIR] [-t targets] [-r bitrates] [-j jobs] MODE files|dir` runs
 one mode: `compare` (the steps above), `exp1` .. `exp7` or `all` (see Experiments).
 `make bench` and `make experiments` run it on the course samples. Every mode writes
-`MODE.csv` (one row per run: `file,codec,config,param,bytes,kbps,snr_db,lag,enc_s,enc_kb,dec_s,dec_kb`),
-`MODE.md` (kbps at equal SNR and SNR at equal kbps, averaged over the files,
-from `snr_tool.py table`) and `MODE.svg` (average curves, from `snr_tool.py plot`).
+`MODE.csv` (one row per run: `file,codec,config,param,bytes,ratio,kbps,snr_db,lag,enc_s,enc_kb,dec_s,dec_kb`, with `ratio` = original WAV size / compressed size),
+`MODE.md` (kbps and compression ratio at equal SNR, and SNR at equal kbps, averaged over the files,
+from `snr_tool.py table`; the compression ratio is total original size / total compressed size, and a point that some files' curves do not reach is averaged over the others, with their count shown) and `MODE.svg` (from `snr_tool.py plot`: one point per encoder setting, at the mean kbps and mean SNR over the files).
 ffmpeg runs with one thread, like our codec. With `-j` above 1 the files run in
 parallel: rates and SNRs are unchanged, but times and memory are then not
 representative, so `compare` runs with `-j 1`.
@@ -314,7 +317,7 @@ field for them on purpose, so they are fixed when the program is compiled:
 
 | Macro | Values | Default | Meaning |
 |---|---|---|---|
-| `CTX_MODE` | 0 none, 1 band only, 2 neighbours only, 3 both | 3 | which context information selects the model |
+| `CTX_MODE` | 0 none, 1 band only, 2 neighbours only, 3 both | 2 | which context information selects the model |
 | `PROB_SHIFT` | 4, 5, 6 | 5 | adaptation speed of the probability models |
 
 - `make` builds the default pair (`wav_lossy_enc`, `wav_lossy_dec`).

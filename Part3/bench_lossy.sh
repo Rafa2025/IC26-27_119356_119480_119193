@@ -27,9 +27,10 @@
 #
 # OUTPUT, per mode, in DIR:
 #   MODE.csv   one row per run:
-#              file,codec,config,param,bytes,kbps,snr_db,lag,enc_s,enc_kb,dec_s,dec_kb
+#              file,codec,config,param,bytes,ratio,kbps,snr_db,lag,enc_s,enc_kb,dec_s,dec_kb
+#              (ratio = original WAV size / compressed size)
 #              (param = SNR target for ours, bitrate for mp3/aac)
-#   MODE.md    kbps at equal SNR (and SNR at equal kbps), averaged over the files
+#   MODE.md    kbps and compression ratio at equal SNR (and SNR at equal kbps), averaged over the files
 #   MODE.svg   average rate-distortion curves
 #
 # Times are wall-clock seconds and memory is the peak resident set size,
@@ -93,10 +94,11 @@ timed() {
 # One CSV row. Arguments: file codec config param bytes snr lag enc_stats dec_stats frames rate
 row() {
     local file=$1 codec=$2 config=$3 param=$4 bytes=$5 snr=$6 lag=$7 es=$8 ds=$9 frames=${10} rate=${11}
-    local kbps
+    local kbps ratio
+    ratio=$(awk -v o="$(stat -c %s "$file")" -v b="$bytes" 'BEGIN { printf "%.3f", o / b }')
     kbps=$(awk -v b="$bytes" -v f="$frames" -v r="$rate" \
            'BEGIN { if (f > 0) printf "%.3f", b * 8 / (f / r) / 1000; else print 0 }')
-    echo "$(basename "$file"),$codec,$config,$param,$bytes,$kbps,$snr,$lag,$(tr ' ' ',' < "$es"),$(tr ' ' ',' < "$ds")"
+    echo "$(basename "$file"),$codec,$config,$param,$bytes,$ratio,$kbps,$snr,$lag,$(tr ' ' ',' < "$es"),$(tr ' ' ',' < "$ds")"
 }
 
 # ours FILE CONFIG ENC DEC [encoder options...]: one row per SNR target.
@@ -181,7 +183,7 @@ do_exp4() {
 do_exp5() {
     local s
     for s in 4 5 6; do
-        local v; v=$(variant 3 $s)
+        local v; v=$(variant 2 $s)
         ours "$1" "shift$s" "$v/wav_lossy_enc" "$v/wav_lossy_dec"
     done
 }
@@ -192,7 +194,7 @@ run_mode() {
     local name=$1 title=$2; shift 2
     echo "== $name: $title (${#FILES[@]} files, targets: $TARGETS)" >&2
     {
-        echo "file,codec,config,param,bytes,kbps,snr_db,lag,enc_s,enc_kb,dec_s,dec_kb"
+        echo "file,codec,config,param,bytes,ratio,kbps,snr_db,lag,enc_s,enc_kb,dec_s,dec_kb"
         for_files "do_$name"
     } > "$OUT/$name.csv"
     {
@@ -213,7 +215,7 @@ esac
 if [ "$MODE" = compare ]; then
     command -v ffmpeg > /dev/null || { echo "ffmpeg not found" >&2; exit 1; }
     : "${TARGETS:=10 15 20 25 30 35 40 45 50 55 60 65 70}"
-    run_mode compare "Our codec vs MP3 and AAC" --at-snr 15,20,25 --at-kbps 64,128,192,256
+    run_mode compare "Our codec vs MP3 and AAC" --at-snr 15,20,25,30 --at-kbps 64,128,192,256
     exit 0
 fi
 
