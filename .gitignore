@@ -18,5 +18,9 @@ plots/
 .DS_Store
 .vscode/
 
+#data type shi
+*.csv
+*.png
+summary.md
 # course datasets (downloaded from eLearning, not ours to publish)
 Audio_Datasets/
