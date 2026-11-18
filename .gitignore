@@ -22,3 +22,5 @@ summary.md
 # course datasets (downloaded from eLearning, not ours to publish)
 Audio_Datasets/
 ImageFiles/
+
+!trab2/Part2/benchmark/results*/*.csv

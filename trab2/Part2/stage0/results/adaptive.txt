@@ -1,0 +1,30 @@
+
+pgm8
+  JPEG-XL                            3.870
+  WGT static                         3.940
+  WGT adaptive                       3.944
+  JPEG-LS                            4.000
+  GAP static                         4.007
+  GAP adaptive                       4.011
+  MED static                         4.033
+  MED adaptive                       4.037
+
+raw16
+  WGT static                         7.739
+  WGT adaptive                       7.740
+  GAP static                         7.827
+  GAP adaptive                       7.828
+  JPEG-LS                            7.870
+  JPEG-XL                            7.891
+  MED static                         7.999
+  MED adaptive                       8.000
+
+ppm natural (11)
+  JPEG-XL                           12.387
+  WGT static (best tf/img)          12.598
+  WGT adaptive (best tf/img)        12.624
+  GAP static (best tf/img)          12.832
+  GAP adaptive (best tf/img)        12.859
+  MED static (best tf/img)          13.085
+  MED adaptive (best tf/img)        13.111
+  JPEG-LS                           13.596

@@ -1,0 +1,8 @@
+# build output
+img_lossless_enc
+img_lossless_dec
+san/
+# unit-test programs (keep their sources)
+test_*
+!test_*.c
+!test_*.py

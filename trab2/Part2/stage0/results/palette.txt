@@ -1,0 +1,27 @@
+arial.ppm K=256 idx+xz=5.18 sorted+MED=6.02 sorted+WGT=6.11 adapt ctx=W=5.00 adapt ctx=W,N=5.63 adapt ctx=W,N,NE=6.29 best_tile/MED=14.34 JPEG-LS=17.18 JPEG-XL=5.76 xz-9=6.14
+01.256.ppm.gz K=256 idx+xz=5.17 sorted+MED=5.79 sorted+WGT=5.93 adapt ctx=W=4.86 adapt ctx=W,N=5.52 adapt ctx=W,N,NE=6.65 best_tile/MED=12.26 JPEG-LS=15.70 JPEG-XL=5.57 xz-9=6.15
+02.256.ppm.gz K=256 idx+xz=4.91 sorted+MED=5.53 sorted+WGT=5.71 adapt ctx=W=4.38 adapt ctx=W,N=4.55 adapt ctx=W,N,NE=5.73 best_tile/MED=8.59 JPEG-LS=12.46 JPEG-XL=5.20 xz-9=5.71
+03.256.ppm.gz K=256 idx+xz=2.48 sorted+MED=3.32 sorted+WGT=3.74 adapt ctx=W=2.16 adapt ctx=W,N=2.07 adapt ctx=W,N,NE=2.50 best_tile/MED=8.05 JPEG-LS=9.10 JPEG-XL=2.46 xz-9=2.86
+04.256.ppm.gz K=256 idx+xz=3.74 sorted+MED=4.43 sorted+WGT=4.77 adapt ctx=W=3.20 adapt ctx=W,N=3.24 adapt ctx=W,N,NE=4.07 best_tile/MED=10.17 JPEG-LS=12.31 JPEG-XL=3.97 xz-9=4.24
+05.256.ppm.gz K=256 idx+xz=4.67 sorted+MED=5.36 sorted+WGT=5.48 adapt ctx=W=4.24 adapt ctx=W,N=4.45 adapt ctx=W,N,NE=5.43 best_tile/MED=13.01 JPEG-LS=15.43 JPEG-XL=4.99 xz-9=5.45
+06.256.ppm.gz K=255 idx+xz=4.22 sorted+MED=4.90 sorted+WGT=5.04 adapt ctx=W=3.75 adapt ctx=W,N=4.40 adapt ctx=W,N,NE=5.34 best_tile/MED=10.92 JPEG-LS=13.41 JPEG-XL=4.49 xz-9=4.83
+07.256.ppm.gz K=256 idx+xz=3.22 sorted+MED=3.83 sorted+WGT=4.19 adapt ctx=W=2.88 adapt ctx=W,N=2.85 adapt ctx=W,N,NE=3.31 best_tile/MED=8.79 JPEG-LS=10.55 JPEG-XL=3.23 xz-9=3.77
+08.256.ppm.gz K=256 idx+xz=5.16 sorted+MED=5.31 sorted+WGT=5.54 adapt ctx=W=4.85 adapt ctx=W,N=5.00 adapt ctx=W,N,NE=6.06 best_tile/MED=13.12 JPEG-LS=15.95 JPEG-XL=5.02 xz-9=6.11
+09.256.ppm.gz K=256 idx+xz=3.89 sorted+MED=4.37 sorted+WGT=4.49 adapt ctx=W=3.55 adapt ctx=W,N=3.45 adapt ctx=W,N,NE=4.24 best_tile/MED=8.89 JPEG-LS=11.79 JPEG-XL=3.63 xz-9=4.63
+10.256.ppm.gz K=256 idx+xz=4.00 sorted+MED=4.45 sorted+WGT=4.63 adapt ctx=W=3.69 adapt ctx=W,N=3.61 adapt ctx=W,N,NE=4.59 best_tile/MED=10.33 JPEG-LS=12.03 JPEG-XL=3.87 xz-9=4.77
+11.256.ppm.gz K=256 idx+xz=3.91 sorted+MED=4.85 sorted+WGT=5.17 adapt ctx=W=3.46 adapt ctx=W,N=3.76 adapt ctx=W,N,NE=4.73 best_tile/MED=10.33 JPEG-LS=12.89 JPEG-XL=4.47 xz-9=4.53
+12.256.ppm.gz K=256 idx+xz=3.28 sorted+MED=4.08 sorted+WGT=4.39 adapt ctx=W=2.96 adapt ctx=W,N=3.03 adapt ctx=W,N,NE=3.77 best_tile/MED=9.13 JPEG-LS=11.16 JPEG-XL=3.28 xz-9=3.75
+13.256.ppm.gz K=256 idx+xz=5.71 sorted+MED=6.38 sorted+WGT=6.41 adapt ctx=W=5.19 adapt ctx=W,N=6.01 adapt ctx=W,N,NE=7.10 best_tile/MED=14.70 JPEG-LS=17.72 JPEG-XL=6.23 xz-9=6.65
+14.256.ppm.gz K=256 idx+xz=4.30 sorted+MED=5.10 sorted+WGT=5.32 adapt ctx=W=3.74 adapt ctx=W,N=4.05 adapt ctx=W,N,NE=5.05 best_tile/MED=12.02 JPEG-LS=14.56 JPEG-XL=4.73 xz-9=4.96
+15.256.ppm.gz K=256 idx+xz=3.37 sorted+MED=3.84 sorted+WGT=4.04 adapt ctx=W=2.97 adapt ctx=W,N=2.84 adapt ctx=W,N,NE=3.54 best_tile/MED=9.47 JPEG-LS=10.97 JPEG-XL=3.31 xz-9=3.93
+16.256.ppm.gz K=255 idx+xz=3.79 sorted+MED=4.60 sorted+WGT=4.79 adapt ctx=W=3.43 adapt ctx=W,N=3.93 adapt ctx=W,N,NE=4.82 best_tile/MED=9.29 JPEG-LS=12.00 JPEG-XL=4.05 xz-9=4.40
+17.256.ppm.gz K=256 idx+xz=4.44 sorted+MED=4.43 sorted+WGT=4.48 adapt ctx=W=3.85 adapt ctx=W,N=3.95 adapt ctx=W,N,NE=4.94 best_tile/MED=10.17 JPEG-LS=12.51 JPEG-XL=3.95 xz-9=5.20
+18.256.ppm.gz K=256 idx+xz=4.98 sorted+MED=5.62 sorted+WGT=5.83 adapt ctx=W=4.16 adapt ctx=W,N=4.56 adapt ctx=W,N,NE=5.61 best_tile/MED=13.31 JPEG-LS=15.34 JPEG-XL=5.28 xz-9=5.65
+19.256.ppm.gz K=256 idx+xz=4.38 sorted+MED=4.85 sorted+WGT=5.06 adapt ctx=W=3.76 adapt ctx=W,N=3.95 adapt ctx=W,N,NE=4.95 best_tile/MED=11.04 JPEG-LS=13.47 JPEG-XL=4.24 xz-9=5.13
+20.256.ppm.gz K=256 idx+xz=3.16 sorted+MED=3.49 sorted+WGT=3.45 adapt ctx=W=2.96 adapt ctx=W,N=3.11 adapt ctx=W,N,NE=3.71 best_tile/MED=7.93 JPEG-LS=9.59 JPEG-XL=3.12 xz-9=3.75
+21.256.ppm.gz K=256 idx+xz=4.06 sorted+MED=5.07 sorted+WGT=5.28 adapt ctx=W=3.68 adapt ctx=W,N=4.18 adapt ctx=W,N,NE=4.98 best_tile/MED=11.31 JPEG-LS=13.57 JPEG-XL=4.61 xz-9=4.72
+22.256.ppm.gz K=256 idx+xz=4.35 sorted+MED=4.92 sorted+WGT=5.23 adapt ctx=W=3.86 adapt ctx=W,N=3.99 adapt ctx=W,N,NE=5.02 best_tile/MED=12.26 JPEG-LS=13.71 JPEG-XL=4.49 xz-9=5.00
+23.256.ppm.gz K=256 idx+xz=2.57 sorted+MED=3.17 sorted+WGT=3.72 adapt ctx=W=2.36 adapt ctx=W,N=2.09 adapt ctx=W,N,NE=2.54 best_tile/MED=8.32 JPEG-LS=9.29 JPEG-XL=2.43 xz-9=2.98
+
+Kodak mean (all 768x512): idx+xz=4.076 sorted+MED=4.682 sorted+WGT=4.899 adapt ctx=W=3.650 adapt ctx=W,N=3.852 adapt ctx=W,N,NE=4.725 best_tile/MED=10.584 JPEG-LS=12.848 JPEG-XL=4.201 xz-9=4.747
+arial: idx+xz=5.178 sorted+MED=6.023 sorted+WGT=6.106 adapt ctx=W=4.996 adapt ctx=W,N=5.635 adapt ctx=W,N,NE=6.290 best_tile/MED=14.340 JPEG-LS=17.180 JPEG-XL=5.764 xz-9=6.138

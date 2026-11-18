@@ -1,0 +1,68 @@
+
+## pgm8 (7 images, 10s)
+
+| option | bpp | vs A |
+|---|---:|---:|
+| JPEG-XL | 3.870 | -1.5% |
+| J  activity 8 x error 8 | 3.880 | -1.3% |
+| N  activity 8 x error 8 + bias (365 gradient ctx) | 3.881 | -1.2% |
+| G  error 24 (half-octave) | 3.898 | -0.8% |
+| F  error 16 (half-octave) | 3.898 | -0.8% |
+| O  error 16 (half-octave) + bias (365 gradient ctx) | 3.901 | -0.7% |
+| E  best-sub-error 12 | 3.904 | -0.6% |
+| D  error 12 | 3.908 | -0.5% |
+| L  activity 6 x error 6 + bias (365 gradient ctx) | 3.909 | -0.5% |
+| M  best-sub-error 12 + bias (365 gradient ctx) | 3.910 | -0.5% |
+| H  error 8 | 3.910 | -0.5% |
+| I  activity 6 x error 6 | 3.910 | -0.5% |
+| K  error 12 + bias (365 gradient ctx) | 3.911 | -0.5% |
+| B  activity 12 + bias (365 gradient ctx) | 3.929 | -0.0% |
+| A  activity 12 (stage 0 model) | 3.929 | +0.0% |
+| C  activity 12 + bias (coding ctx) | 3.939 | +0.3% |
+| JPEG-LS | 4.000 | +1.8% |
+
+## raw16 (4 images, 23s)
+
+| option | bpp | vs A |
+|---|---:|---:|
+| N  activity 8 x error 8 + bias (365 gradient ctx) | 7.690 | -0.3% |
+| O  error 16 (half-octave) + bias (365 gradient ctx) | 7.692 | -0.3% |
+| K  error 12 + bias (365 gradient ctx) | 7.693 | -0.3% |
+| B  activity 12 + bias (365 gradient ctx) | 7.693 | -0.3% |
+| M  best-sub-error 12 + bias (365 gradient ctx) | 7.695 | -0.3% |
+| L  activity 6 x error 6 + bias (365 gradient ctx) | 7.696 | -0.2% |
+| J  activity 8 x error 8 | 7.711 | -0.0% |
+| A  activity 12 (stage 0 model) | 7.714 | +0.0% |
+| F  error 16 (half-octave) | 7.715 | +0.0% |
+| G  error 24 (half-octave) | 7.715 | +0.0% |
+| E  best-sub-error 12 | 7.715 | +0.0% |
+| D  error 12 | 7.715 | +0.0% |
+| H  error 8 | 7.716 | +0.0% |
+| C  activity 12 + bias (coding ctx) | 7.720 | +0.1% |
+| I  activity 6 x error 6 | 7.721 | +0.1% |
+| JPEG-LS | 7.870 | +2.0% |
+| JPEG-XL | 7.891 | +2.3% |
+
+## ppm natural (11 images, 15s)
+
+| option | bpp | vs A |
+|---|---:|---:|
+| JPEG-XL | 12.387 | -1.5% |
+| Q  activity 8 x error 8, error includes all earlier planes | 12.478 | -0.8% |
+| P  activity 8 x error 8, error includes 1st colour plane | 12.481 | -0.8% |
+| J  activity 8 x error 8 | 12.514 | -0.5% |
+| N  activity 8 x error 8 + bias (365 gradient ctx) | 12.525 | -0.4% |
+| E  best-sub-error 12 | 12.561 | -0.1% |
+| A  activity 12 (stage 0 model) | 12.576 | +0.0% |
+| F  error 16 (half-octave) | 12.584 | +0.1% |
+| G  error 24 (half-octave) | 12.585 | +0.1% |
+| O  error 16 (half-octave) + bias (365 gradient ctx) | 12.594 | +0.1% |
+| D  error 12 | 12.600 | +0.2% |
+| M  best-sub-error 12 + bias (365 gradient ctx) | 12.600 | +0.2% |
+| B  activity 12 + bias (365 gradient ctx) | 12.602 | +0.2% |
+| H  error 8 | 12.604 | +0.2% |
+| I  activity 6 x error 6 | 12.606 | +0.2% |
+| K  error 12 + bias (365 gradient ctx) | 12.611 | +0.3% |
+| L  activity 6 x error 6 + bias (365 gradient ctx) | 12.612 | +0.3% |
+| C  activity 12 + bias (coding ctx) | 12.665 | +0.7% |
+| JPEG-LS | 13.596 | +8.1% |
